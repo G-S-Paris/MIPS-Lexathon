@@ -40,10 +40,8 @@ addi $t2, $t2, 1  # increment number of chars in string
 addi $t0, $t0, 1  #increment address, so that the lb function accesses the next char
 j loop
 
-getCountOfChars:
-addi $t3, $t2, -1	#t3 holds the length of the string; I had to put a -1, otherwise it was showing the wrong length
+getCountOfChars:addi $t3, $t2, -1	#t3 holds the length of the string; I had to put a -1, otherwise it was showing the wrong length
 #mac_PrintInt($t3)	#check to see if the length is right
-
 .end_macro
 
 .macro mac_getLength_history

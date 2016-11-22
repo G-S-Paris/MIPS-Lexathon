@@ -21,96 +21,93 @@ addrs:
 ################## MACROS ###############################
 
 .macro mac_PrintInt(%x)
-li $v0, 1
-add $a0, $zero, %x
-syscall
+    li $v0, 1
+    add $a0, $zero, %x
+    syscall
 .end_macro
 
 .macro mac_getLength
-li $t2, 0
-j loop
+    li $t2, 0
+    j loop
 
-loop:
-lb $t1, ($t0)   #load the character at the index into t1
-beq $t1, $zero, getCountOfChars
-addi $t2, $t2, 1  # increment number of chars in string
-addi $t0, $t0, 1  #increment address, so that the lb function accesses the next char
-j loop
+    loop:
+    lb $t1, ($t0)   #load the character at the index into t1
+    beq $t1, $zero, getCountOfChars
+    addi $t2, $t2, 1  # increment number of chars in string
+    addi $t0, $t0, 1  #increment address, so that the lb function accesses the next char
+    j loop
 
-getCountOfChars:
-addi $t3, $t2, -1	#t3 holds the length of the string; I had to put a -1, otherwise it was showing the wrong length
-#mac_PrintInt($t3)	#check to see if the length is right
-
+    getCountOfChars:
+    addi $t3, $t2, -1	#t3 holds the length of the string; I had to put a -1, otherwise it was showing the wrong length
+    #mac_PrintInt($t3)	#check to see if the length is right
 .end_macro
 
 .macro mac_getLength_history
-add $t4, $s3, $zero
-li $t2, 0
-j loop
+    add $t4, $s3, $zero
+    li $t2, 0
+    j loop
 
-loop:
-lb $t8, ($t4)   #load the character at the index into t1
-beq $t8, $zero, getCountOfChars
-addi $t2, $t2, 1  # increment number of chars in string
-addi $t4, $t4, 1  #increment address, so that the lb function accesses the next char
-j loop
+    loop:
+        lb $t8, ($t4)   #load the character at the index into t1
+        beq $t8, $zero, getCountOfChars
+        addi $t2, $t2, 1  # increment number of chars in string
+        addi $t4, $t4, 1  #increment address, so that the lb function accesses the next char
+        j loop
 
-getCountOfChars:
-addi $t9, $t2, 0	#t3 holds the length of the string; I
-#mac_PrintInt($t9)	#check to see if the length is right
-
+    getCountOfChars:
+        addi $t9, $t2, 0	#t3 holds the length of the string; I
+        #mac_PrintInt($t9)	#check to see if the length is right
 .end_macro
 
-
 .macro mac_PrintString(%str)
-.data
-printstr: .asciiz %str
-.text
-li $v0, 4
-la $a0, printstr
-syscall
+    .data
+        printstr: .asciiz %str
+    .text
+        li $v0, 4
+        la $a0, printstr
+        syscall
 .end_macro
 
 .macro mac_PrintCentralLetter
-.text
-li $v0, 11
-la $a0, ($s1)
-syscall
+    .text
+        li $v0, 11
+        la $a0, ($s1)
+        syscall
 .end_macro
 
 .macro mac_PrintLetter
-.text
-li $v0, 11
-la $a0, ($t1)
-syscall
+    .text
+        li $v0, 11
+        la $a0, ($t1)
+        syscall
 .end_macro
 
 .macro mac_PrintChar9LetterWord
-.text
-li $v0, 11
-la $a0, ($t5)
-syscall
+    .text
+        li $v0, 11
+        la $a0, ($t5)
+        syscall
 .end_macro
 
 .macro mac_getUserString
-li $v0,8	#get word, store in UserEntry
-la $a0,UserEntry
-addi $a1,$zero,20   # read max of 20 characters
-syscall
-la $t0, UserEntry	#store address of USerEntry into $t0
+    li $v0,8	#get word, store in UserEntry
+    la $a0,UserEntry
+    addi $a1,$zero,20   # read max of 20 characters
+    syscall
+    la $t0, UserEntry	#store address of USerEntry into $t0
 .end_macro
 
 .macro mac_getCentralLetter
-la $s0, word
-lb $s1, 1($s0)	#s1 holds central letter, letter that has to be in any word inputted by user; hardcoded to be 2nd letter
+    la $s0, word
+    lb $s1, 1($s0)	#s1 holds central letter, letter that has to be in any word inputted by user; hardcoded to be 2nd letter <-- change this upon merge!
 .end_macro
 
 .macro mac_initCountAndIndex
-la $t0, UserEntry
-li $t2, 0
-la $s0, word
-li $t4, 8	# used before in validateLength function; now used to hold length of 9-letter word
-li $t6, 0	# used to keep track of index in 9-letter word
+    la $t0, UserEntry
+    li $t2, 0
+    la $s0, word
+    li $t4, 8	# used before in validateLength function; now used to hold length of 9-letter word
+    li $t6, 0	# used to keep track of index in 9-letter word
 .end_macro
 
 
