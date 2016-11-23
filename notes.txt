@@ -1,36 +1,233 @@
 notes
 ------
 
-Proof that newlines work 
+
 ****
-ln: .ascii "word\n"
-.text
-    
-    li $t0, 0
-loop:
-    addi $t0,$t0, 1
-    addi $v0, $zero, 4  # print_string syscall
-    la $a0, ln       # load address of the string
-    syscall
-    beq $t0 , 6, exit 
-    j loop 
-    
-    exit: 
+## Proof that newlines work 
+    ln: .ascii "word\n"
+    .text
+        
+        li $t0, 0
+    loop:
+        addi $t0,$t0, 1
+        addi $v0, $zero, 4  # print_string syscall
+        la $a0, ln       # load address of the string
+        syscall
+        beq $t0 , 6, exit 
+        j loop 
+        
+        exit: 
+
 ****
+
 la $s7, array       # address of array
 lw $s3, 0($s7)      # data = index(array)
+
 ****
 ## made with the assumption that .space is 21
 ## a1 is set to 21 
 
-    li    $s0,0                     # Set index to 0
-remove:
-    lb    $a3,   word($s0)          # Load character at index
-    addi  $s0,   $s0,       1       # Increment index
-    bnez  $a3,   remove             # Loop until the end of string is reached
-    beq   $a1,   $s0,       skip    # Do not remove \n when string = maxlength
-    subiu $s0,   $s0,       2       # If above not true, Backtrack index to '\n'
-    sb    $zero, word($s0)          # Add the terminating character in its place
-skip:
+        li    $s0,0                     # Set index to 0
+    remove:
+        lb    $a3,   word($s0)          # Load character at index
+        addi  $s0,   $s0,       1       # Increment index
+        bnez  $a3,   remove             # Loop until the end of string is reached
+        beq   $a1,   $s0,       skip    # Do not remove \n when string = maxlength
+        subiu $s0,   $s0,       2       # If above not true, Backtrack index to '\n'
+        sb    $zero, word($s0)          # Add the terminating character in its place
+    skip:
 
 ****
+## passing labels, define in macro as "word" 
+    .data
+        test: .asciiz "test"
+    .text
+
+    .macro Load_nDict(%str)
+        .data
+            str: .word %str
+        .text   
+                la   $a0, str        # address of string to be printed
+                li   $v0, 4               # print string
+                syscall
+
+    .end_macro
+
+    la $t0, test ## redundant, as test is already an address. 
+    Load_nDict( test )
+
+****
+## passing labels doensn't work when params are defined as .asciiz; must be .word
+## if .asciiz, pass literal 
+## if label, pass .word 
+    .data
+        test: .asciiz "test"
+    .text
+
+    .macro Load_nDict(%str)
+        .data
+            str: .asciiz %str
+        .text   
+                la   $a0, str        # address of string to be printed
+                li   $v0, 4               # print string
+                syscall
+
+    .end_macro
+    Load_nDict("test")
+    Load_nDict(test)
+
+****
+## Illustrates that you only need a .data entry if you're passing a literal. labels can go direct to .text
+    .data
+        filename: .asciiz "\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/test.txt"  
+    .macro Print_File(%filename)
+        .data
+############filename:  .asciiz %filename     ################################# <- this is only necessary if you pass literals. ##################
+            buffer:    .space  1000
+        .text
+            main:
+                li   $v0, 13              # syscall 13 == open a file; returns file descriptor to v0
+                la   $a0, %filename        # load file name
+                li   $a1, 0               # Open for writing (flags are 0: read, 1: write)
+                li   $a2, 0               # mode is ignored
+                syscall
+                move $s6, $v0             # save the file descriptor
+                
+                li   $v0, 14              # syscall 14 == read from file
+                move $a0, $s6             # prep file descriptor for read
+                la   $a1, buffer          # allocate space for the bytes loaded
+                li   $a2, 57888           # number of bytes to be read
+                syscall  
+
+                ## print the buffer 
+                la   $a0, buffer          # address of string to be printed
+                li   $v0, 4               # print string
+                syscall
+
+                # Close the file 
+                li   $v0, 16       # system call for close file
+                move $a0, $s6      # file descriptor to close
+                syscall            # close file
+        .end_macro  
+
+    #Print_File("\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/test.txt")
+    Print_File(filename)
+
+****
+### working 
+    .data
+        filename: .asciiz "\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
+
+    ## Print_File(filename) -- not sure about buffersizing. I know buffer can overflow, nothing to stop it. 
+    .macro Print_File(%filename, %n)
+        .data
+            buffer:    .space  1000
+        .text
+            main:
+                ## open the file 
+                li   $v0, 13              # syscall 13 == open a file; returns file descriptor to v0
+                la   $a0, %filename        # load file name
+                li   $a1, 0               # Open for writing (flags are 0: read, 1: write)
+                li   $a2, 0               # mode is ignored
+                syscall
+                move $s6, $v0             # save the file descriptor
+                
+                ## read the file into the buffer 
+                li   $v0, 14              # syscall 14 == read from file
+                move $a0, $s6             # prep file descriptor for read
+                la   $a1, buffer          # allocate space for the bytes loaded
+                li   $a2, %n           # number of bytes to be read
+                syscall  
+
+                ## print the buffer 
+                la   $a0, buffer          # address of string to be printed
+                li   $v0, 4               # print string
+                syscall
+
+                # Close the file 
+                li   $v0, 16       # system call for close file
+                move $a0, $s6      # file descriptor to close
+                syscall            # close file
+        .end_macro  
+
+    ## Print_File("\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/test.txt")
+    Print_File(filename,9)
+
+****
+## Now it works fully parameterized
+    .data
+        filename: .asciiz "\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
+        buffer:    .space  1000
+    ## Print_File(filename) -- not sure about buffersizing. I know buffer can overflow, nothing to stop it. 
+    .macro Print_File(%filename, %buffer, %n)
+        .data
+            #buffer:    .space  1000
+        .text   
+            ## open the file 
+            li   $v0, 13              # syscall 13 == open a file; returns file descriptor to v0
+            la   $a0, %filename        # load file name
+            li   $a1, 0               # Open for writing (flags are 0: read, 1: write)
+            li   $a2, 0               # mode is ignored
+            syscall
+            move $s6, $v0             # save the file descriptor
+            
+            ## read the file into the buffer 
+            li   $v0, 14              # syscall 14 == read from file
+            move $a0, $s6             # prep file descriptor for read
+            la   $a1, %buffer          # allocate space for the bytes loaded
+            li   $a2, %n           # number of bytes to be read
+            syscall  
+
+            ## print the buffer 
+            la   $a0, %buffer          # address of string to be printed
+            li   $v0, 4               # print string
+            syscall
+
+            # Close the file 
+            li   $v0, 16       # system call for close file
+            move $a0, $s6      # file descriptor to close
+            syscall            # close file
+        .end_macro  
+
+    #Print_File("\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/test.txt")
+    Print_File(filename, buffer, 9)
+
+****
+## cant be loading immediate if we pass number by register
+    .data
+        filename: .asciiz "\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
+        buffer:    .space  1000
+
+    ## Print_File(filename) -- not sure about buffersizing. I know buffer can overflow, nothing to stop it. 
+    .macro Print_File(%filename, %buffer, %n)
+        .text
+                ## open the file 
+                li   $v0, 13              # syscall 13 == open a file; returns file descriptor to v0
+                la   $a0, %filename        # load file name
+                li   $a1, 0               # Open for writing (flags are 0: read, 1: write)
+                li   $a2, 0               # mode is ignored
+                syscall
+                move $s6, $v0             # save the file descriptor
+                
+                ## read the file into the buffer 
+                li   $v0, 14              # syscall 14 == read from file
+                move $a0, $s6             # prep file descriptor for read
+                la   $a1, %buffer          # allocate space for the bytes loaded
+                move   $a2, %n           # number of bytes to be read
+                syscall  
+
+                ## print the buffer 
+                la   $a0, %buffer          # address of string to be printed
+                li   $v0, 4               # print string
+                syscall
+
+                # Close the file 
+                li   $v0, 16       # system call for close file
+                move $a0, $s6      # file descriptor to close
+                syscall            # close file
+        .end_macro  
+
+    
+    .text
+        addiu $t0, $zero,  9                # load a register - arbitrary 
+        Print_File(filename, buffer, $t0)   # pass n by register
