@@ -1,4 +1,12 @@
 .data 
+    ## Constants
+    .eqv FOUR   5
+    .eqv FIVE   6
+    .eqv SIX    7
+    .eqv SEVEN  8
+    .eqv EIGHT  9
+    .eqv NINE   10 
+
     ## Buffer sizes
     dict4: .space 27012   # file content - bytes #  6753 word count
     dict5: .space  5528   # file content - bytes #  1382 word count
@@ -65,6 +73,24 @@
             syscall 
         .end_macro
 
+    .macro load_buffer(%fdesc, %buffer, %n)
+        .text
+                li     $t8, 0
+            
+        loop:   move   $a0, %fdesc         # prep file descriptor for read
+                la     $a1, %buffer($t8)        # allocate space for the bytes loaded
+                move   $a2, %n             # number of bytes to be read
+                li     $v0, 14             # syscall 14 == read from file
+                syscall 
+
+                blt $v0, 1, exit
+                add $t8, $t8, %n
+                j loop
+
+        exit: 
+
+        .end_macro
+
     ## close_file(%fdesc)
     .macro close_file(%fdesc)
         .text
@@ -124,17 +150,42 @@
     ## print file composed fully of macros 
     .macro print_file(%filename, %buffer, %n)
         .text
-            ## open the file 
+            # open the file 
             open_file(%filename)
-            move $t9, $v0               ## preserve the file decriptor for closing later 
+            
+            # preserve the file decriptor for closing later 
+            move $t9, $v0
 
-            ## read the file into the buffer 
+            # read the file into the buffer 
             read_line($t9,%buffer,%n) 
 
-            ## print the buffer 
+            # print the buffer 
             print(%buffer)
   
-            # Close the file 
+            # close the file 
+            close_file($t9)
+        .end_macro
+
+    .macro load_dict(%filename, %buffer, %n)
+        .text
+            # open the file 
+            open_file(%filename)
+            
+            # preserve the file decriptor for closing later 
+            move $t9, $v0
+
+            # read the file into the buffer 
+            #read_line($t9,%buffer,%n) 
+            load_buffer($t9, %buffer, %n)
+
+
+            ## branch if v0 > 1 or v0 >= 0
+            #blt $v0, 1, 
+
+            # 
+            print(%buffer)
+  
+            # close the file 
             close_file($t9)
         .end_macro
 
@@ -142,4 +193,4 @@
     #############   TEXT SEGMENT    #########################
 
     addiu $t0, $zero,  9                     # preload register - arbitrary 
-    print_file(dict9_fn, dict9, $t0)   # pass n by register
+    print_file(dict9_fn, dict9, $t0)         # pass n by register
