@@ -192,5 +192,5 @@
 .text
     #############   TEXT SEGMENT    #########################
 
-    addiu $t0, $zero,  9                     # preload register - arbitrary 
-    print_file(dict9_fn, dict9, $t0)         # pass n by register
+    addiu $t0, $zero,  NINE                     # preload register - arbitrary 
+    load_dict(dict9_fn, dict9, $t0)         # pass n by register
