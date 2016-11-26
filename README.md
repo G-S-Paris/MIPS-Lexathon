@@ -4,7 +4,6 @@ Mario Jelev
 Greyson Paris
 
 Lexathon -- CS 3340 term project, fall 2016
-====================================================
 
 11/26/2016 - First readme entry. 
     fileio.asm :    encompasses file I/O through macros; the initialization of dictionary structures; 
