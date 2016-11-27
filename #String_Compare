@@ -1,0 +1,69 @@
+#String_Compare
+
+.data
+equal:      .asciiz     "Equal!\n"
+nequal:     .asciiz     "Not equal!\n"
+prompt:	    .asciiz  	"Enter word: "
+str1:       .space      80
+str:        .asciiz     "predicate\n"
+
+# $t2 is holding the address of the buffer
+.text
+
+main:
+    # nine letter graph word
+    la    $a0, str
+    move $s3, $a0
+
+    # get word from dictionary
+    la      $s2, str1
+    move    $t2, $s2
+    jal     string
+
+length:
+
+# Compare String length
+
+# compare loop
+compare:
+    lb      $t2, ($s2) 
+    lb      $t3, ($s3)
+    bne     $t2, $t3, neql               # go to NOTEQUAL
+
+    beq     $t2, $zero, eql             # go to EQUAL
+
+    addi    $s2, $s2, 1
+    addi    $s3, $s3, 1
+    j       compare
+
+# NOTEQUAL
+neql:
+    la      $a0, nequal
+    li      $v0,4
+    syscall
+    j       main
+
+# EQUAL
+eql:
+    la      $a0, equal
+    li      $v0,4
+    syscall
+    j       main
+
+string:
+    # prompt the user
+    la      $a0,prompt
+    li      $v0,4
+    syscall
+
+    # read in the string
+    move    $a0,$t2
+    li      $a1,79
+    li      $v0,8
+    syscall
+    
+    jr      $ra
+
+exit:
+    li      $v0, 10
+    syscall
