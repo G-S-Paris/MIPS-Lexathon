@@ -1,6 +1,15 @@
 ## Greyson Paris -- November 22 2016 -- Computer Architecture 3340
 ## macros I probably won't need 
 
+     ## Passing the word will have to be through address. 
+                ## On my mac I am able to take advantage of std_out to print to screen for testing
+                ## but this doesn't work on windows. 
+                # li $a0, 1               ## filedesc std_out works! 
+                # la $a1, dict9($a3)      ## the return 
+                # li $a2, 9               ## no reason to include \n on print
+                # li $v0, 15              ## write to file syscall 
+                # syscall 
+                
 
 #################### date - 11/27/2016
     ## ****************************

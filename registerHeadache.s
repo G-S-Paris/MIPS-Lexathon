@@ -173,36 +173,35 @@
             .end_macro
 
         ## return 0 (==), 1(>), or -1(<) --- candidate __ current 
+        #  compare_strings(%candidate, $t0, %word_length)
         .macro compare_strings(%candidate, %current, %word_length)
             .text
-                la   $t2, %candidate
-                move $t3, %current
-                li   $t4, 0             # may be li or move depending on how compare is called 
-                #la $t2, %candidate
-                #la $t3, %current
-                #li $t4, %word_length # may be li, depending on how compare is called 
+                la   $t0, %candidate
+                move $t1, %current      
+                li   $t2, 0             # accumulator
+             
                 
-                lb      $t5, ($t2) 
-                lb      $t6, ($t3)
+                lb      $t3, ($t0) 
+                lb      $t4, (%current)
                 
                 compare:
-                    beq      $t4, %word_length, equal          ## words are the same 
-                    bne      $t5, $t6, not_equal     ## words are not the same 
+                    bne      $t3, $t4, not_equal     ## words are not the same 
+                    beq      $t2, %word_length, equal          ## words are the same 
 
-                    addi     $t4, $t4, 1             ## increment the counter 
-                                            
-                    addi     $t2, $t2, 1            ## increment the byte address
-                    lb       $t5, ($t2)              ## load the next byte 
+                    addi     $t2, $t2, 1             ## increment the counter     
 
-                    addi     $t3, $t3, 1        
-                    lb       $t6, ($t3)
+                    addi     $t0, $t0, 1             ## increment the byte address
+                    lb       $t3, ($t0)              ## load the next byte 
+
+                    addi     $t1, $t1, 1        
+                    lb       $t1, ($t1)
 
                     j       compare                 ## compare next bytes 
 
                 
                 not_equal:                          ## determine which one is bigger
-                    slt $t1, $t5, $t6               ## is t0 smaller? yes: 1 no: 0
-                    beq $t1, $zero, kgt
+                    slt $t5, $t3, $t1               ## is t0 smaller? yes: 1 no: 0
+                    beq $t5, $zero, kgt
                     b klt
                 kgt:
                     li $t0, 1
@@ -230,21 +229,23 @@
                 
                 add $a2, $a0, $a1    ## MID = HI + LO / 2
                 srl $a2, $a2, 1      ## / 2 
+
                 beq  $a2, $a0, failure 
                 beq  $a2, $a1, failure 
-                multu $a2, $a3       ## Middle word * word_length
-                mflo $t0             ## store it somewhere else... 
-
-                la $t0, %buffer($t0)    ## the address of the word at a2
                 
-                compare_strings(%candidate, $t0, %word_length)
-                beqz $t0, success 
-                beqz $t0, success     ## if compare returns $zero, we've found our match -> score 
+                multu $a2, $a3       ## Middle word * word_length for offest
+                mflo  $t8             ## store it somewhere else... 
+
+                la $t8, %buffer($t8)    ## the address of the word at a2
+
+                compare_strings(%candidate, $t8, %word_length)
+            
+                beqz $t0, success        ## if compare returns $zero, we've found our match -> score 
                 beq  $a2, $a0, failure   ## if lo == mid.... the word probably can't be scored. to be tested. 
                                       ## else, figure out if we should go hi or lo 
                 slt  $t0, $t0, $zero  ## 
                 beq  $t0, $zero, cgt  ##
-                b clt 
+                #b clt 
             clt:                      ## Candidate is less than mid
                                       ## if 1, move lo to mid, make new mid 
                 subu $a1, $a2, -1
