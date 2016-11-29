@@ -173,35 +173,32 @@
             .end_macro
 
         ## return 0 (==), 1(>), or -1(<) --- candidate __ current 
-        .macro compare_strings(%candidate, %current, %word_length)
+        .macro compare_strings(%candidate, %current, %word_length, %counter)
             .text
-                la   $t2, %candidate
-                move $t3, %current
-                li   $t4, 0             # may be li or move depending on how compare is called 
-                #la $t2, %candidate
-                #la $t3, %current
-                #li $t4, %word_length # may be li, depending on how compare is called 
+                add   $t8, %counter, $zero
+                add   $t2, $t8, %candidate
+                add   $t3, $t8, %current
                 
                 lb      $t5, ($t2) 
                 lb      $t6, ($t3)
                 
                 compare:
-                    beq      $t4, %word_length, equal          ## words are the same 
-                    bne      $t5, $t6, not_equal     ## words are not the same 
+                    bne      $t5, $t6, not_equal        ## words are not the same 
+                    beq      $t8, %word_length, equal   ## words are the same 
 
-                    addi     $t4, $t4, 1             ## increment the counter 
                                             
-                    addi     $t2, $t2, 1            ## increment the byte address
-                    lb       $t5, ($t2)              ## load the next byte 
-
+                    addi     $t2, $t2, 1                ## increment the byte address
                     addi     $t3, $t3, 1        
+                    addi     $t8, $t8, 1                ## increment the counter 
+                    
+                    lb       $t5, ($t2)                 ## load the next byte 
                     lb       $t6, ($t3)
 
-                    j       compare                 ## compare next bytes 
+                    j       compare                     ## compare next bytes 
 
                 
-                not_equal:                          ## determine which one is bigger
-                    slt $t1, $t5, $t6               ## is t0 smaller? yes: 1 no: 0
+                not_equal:                              ## determine which one is bigger
+                    slt $t1, $t5, $t6                   ## is t0 smaller? yes: 1 no: 0
                     beq $t1, $zero, kgt
                     b klt
                 kgt:
@@ -221,44 +218,45 @@
             la   $a0, 0              ## LO - 0 index
             li   $a1, %word_count    ## HI - number of total words 
             li   $a3, %word_length
-
+            la   $t9, %candidate
+            li   $t8, 0
 
             #mult $a1, $a3
             #mflo $a1 
 
             middle: 
                 
-                add $a2, $a0, $a1    ## MID = HI + LO / 2
-                srl $a2, $a2, 1      ## / 2 
-                beq  $a2, $a0, failure 
-                beq  $a2, $a1, failure 
-                multu $a2, $a3       ## Middle word * word_length
-                mflo $t0             ## store it somewhere else... 
+                add   $a2, $a0, $a1      ## MID = HI + LO / 2
+                srl   $a2, $a2, 1        ## / 2 
+                beq   $a2, $a0, failure 
+                beq   $a2, $a1, failure 
+                multu $a2, $a3           ## Middle word * word_length
+                mflo  $t0                ## store it somewhere else... 
 
-                la $t0, %buffer($t0)    ## the address of the word at a2
+                la $t0, %buffer($t0)     ## the address of the word at a2
                 
-                compare_strings(%candidate, $t0, %word_length)
-                beqz $t0, success 
-                beqz $t0, success     ## if compare returns $zero, we've found our match -> score 
+                compare_strings(%candidate, $t0, %word_length, $t8)
+                
+                beqz $t0, success        ## if compare returns $zero, we've found our match -> score 
                 beq  $a2, $a0, failure   ## if lo == mid.... the word probably can't be scored. to be tested. 
-                                      ## else, figure out if we should go hi or lo 
-                slt  $t0, $t0, $zero  ## 
-                beq  $t0, $zero, cgt  ##
+                                         ## else, figure out if we should go hi or lo 
+                slt  $t0, $t0, $zero     ## 
+                beq  $t0, $zero, cgt     ##
                 b clt 
-            clt:                      ## Candidate is less than mid
-                                      ## if 1, move lo to mid, make new mid 
+            clt:                         ## Candidate is less than mid
+                                         ## if 1, move lo to mid, make new mid 
                 subu $a1, $a2, -1
                 j middle
 
-            cgt:                      ## Candidate is greater than mid 
-                                      ## if -1, move hi to mid, make new mid 
+            cgt:                         ## Candidate is greater than mid 
+                                         ## if -1, move hi to mid, make new mid 
                 addi $a0, $a2, 1
                 j middle
             
             success:
-                        li $a0, 1
+                        li $a0, 1 ## success
             failure: 
-                        li $a0, 1 
+                        li $a0, 0 ## failure  
             exit: 
 
             .end_macro
