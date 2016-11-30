@@ -87,13 +87,6 @@ history_offset:		.word 0
     #dict8_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\8dict.txt"
     #dict9_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\9dict.txt"
 
-   ## Chase file names
-    dict4_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/4dict.txt"
-    dict5_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/5dict.txt"
-    dict6_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/6dict.txt"
-    dict7_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/7dict.txt"
-    dict8_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/8dict.txt"
-    dict9_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/9dict.txt"
 ################## MACROS ###############################
 
 .macro mac_PrintInt(%x)
