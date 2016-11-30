@@ -1,0 +1,1383 @@
+#s0 :: address of the 9 letter word
+#s1 :: copy of the 9 letter graph word
+#s2 :: time_variable
+#s3 ::
+#s4 ::
+#s5 ::
+#s6 ::
+#s7 :: shuffle_counter
+.data
+startGame: 		.asciiz "To begin, click enter \n\n"
+commands:		.asciiz "\nTo shuffle the board, enter a 's' \nTo see remaining time, enter a 't' \nTo end the game, enter a 'e'\n"
+tryAgain:		.asciiz "Try again!"
+invalidWord:		.asciiz "That is not a word! Try again: "
+validWord:		.asciiz "Word found! Keep going: "
+gameOver:		.asciiz "Game over!"
+score_prompt:		.asciiz "Your score is: "
+gameRulesOne:		.asciiz "!Lexathon! \n\nHow to play: You will be given a 3x3 graph of nine letters. \nYour goal is to create a four to nine letter word using the \nletters provided. The letter in the middle must be used \nfor the word to count! Good luck! \n\nThe following commands may be called at any time:\n"
+output: 		.asciiz "Enter word:  "
+space: 			.asciiz " "
+newline: 		.asciiz "\n"
+prompt:  		.asciiz "Enter a word:  "
+null: 			.asciiz "\n"
+time:			.asciiz "t"
+shuffle:		.asciiz "s"
+end:			.asciiz "e"
+sec: 			.asciiz " seconds remaining"
+w1: 			.asciiz "dictatr"
+w2:			.asciiz "predi"
+w3: 			.asciiz "crate"
+w4:			.asciiz "catei"
+w5:			.asciiz "cater"
+w6:			.asciiz "dictate"
+sorry_statement:	.asciiz "Sorry, you ran out of time! "
+buffer:			.space 20
+UserEntry: 		.space 20
+history:		.space 1000
+
+history_offset:		.word 0
+  #.word w2
+  #.word w3
+  #.word w4
+  #.word w5
+  #.word w6
+
+.data
+    ## Constants
+    .eqv FOUR   5
+    .eqv FIVE   6
+    .eqv SIX    7
+    .eqv SEVEN  8
+    .eqv EIGHT  9
+    .eqv NINE   10
+    .eqv LETTER_E 101
+    .eqv LETTER_S 115
+    .eqv LETTER_T 116
+
+    ## refArray to buffers
+    .align 2
+        dictN: .space 24      # word per dictionary
+
+    ## Buffer sizes
+    .align 0
+        dict4: .space 33800   # file content - bytes #  6753 word count
+        dict5: .space  8300   # file content - bytes #  1382 word count
+        dict6: .space 10580   # file content - bytes #  1509 word count
+        dict7: .space 11770   # file content - bytes #  1466 word count
+        dict8: .space 10500   # file content - bytes #  1166 word count
+        dict9: .space  9100   # file content - bytes #   909 word count
+
+    ## Filepath for dev reference... will change with your machine
+    # mac_filepath : .asciiz    "\/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt"
+    # windows_filepath: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\9dict.txt")
+
+    ## file names
+    #dict4_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/4dict.txt"
+    #dict5_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/5dict.txt"
+    #dict6_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/6dict.txt"
+    #dict7_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/7dict.txt"
+    #dict8_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/8dict.txt"
+    #dict9_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt"
+
+    ## windows file names
+    #dict4_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\4dict.txt"
+    #dict5_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\5dict.txt"
+    #dict6_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\6dict.txt"
+    #dict7_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\7dict.txt"
+    #dict8_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\8dict.txt"
+    #dict9_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\9dict.txt"
+
+   ## Chase file names
+    dict4_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/4dict.txt"
+    dict5_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/5dict.txt"
+    dict6_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/6dict.txt"
+    dict7_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/7dict.txt"
+    dict8_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/8dict.txt"
+    dict9_fn: .asciiz "\/Users\/ChaseDavis\/Davis\ Files\/UTD Offline Files\/SE\ 3340.001\ Offline\/Lexathon\/Dictionaries\/9dict.txt"
+################## MACROS ###############################
+
+.macro mac_PrintInt(%x)
+	li $v0, 1
+	add $a0, $zero, %x
+	syscall
+.end_macro
+
+.macro mac_getLength
+	li $t2, 0
+	j loop
+
+loop:
+	lb $t7, ($t0)   #load the character at the index into t7
+	beq $t7, $zero, getCountOfChars
+	addi $t2, $t2, 1  # increment number of chars in string
+	addi $t0, $t0, 1  #increment address, so that the lb function accesses the next char
+	j loop
+
+getCountOfChars:
+	addi $t3, $t2, -1	#t3 holds the length of the string; I had to put a -1, otherwise it was showing the wrong length
+	#mac_PrintInt($t3)	#check to see if the length is right
+
+.end_macro
+
+.macro mac_getLength_history
+	#move $t4, $zero
+	add $t4, $s3, $zero
+	li $t2, 0
+	j loop
+
+loop:
+	lb $t8, ($t4)   #load the character at the index into t7
+	beq $t8, $zero, getCountOfChars
+	addi $t2, $t2, 1  # increment number of chars in string
+	addi $t4, $t4, 1  #increment address, so that the lb function accesses the next char
+	j loop
+
+getCountOfChars:
+	addi $t9, $t2, 0	#t3 holds the length of the string; I
+	#mac_PrintInt($t9)	#check to see if the length is right
+
+.end_macro
+
+
+.macro mac_PrintString(%str)
+.data
+printstr: .asciiz %str
+.text
+	li $v0, 4
+	la $a0, printstr
+	syscall
+.end_macro
+
+#.macro mac_PrintCentralLetter
+#text
+#	li $v0, 11
+#	la $a0, ($s1)
+#	syscall
+#.end_macro
+
+#.macro mac_PrintLetter
+#.text
+#	li $v0, 11
+#	la $a0, ($t7)
+#	syscall
+#end_macro
+
+.macro mac_PrintChar9LetterWord
+.text
+	li $v0, 11
+	la $a0, ($t5)
+	syscall
+.end_macro
+
+.macro mac_getUserString
+	li $v0,8	#get word, store in UserEntry
+	la $a0,UserEntry
+	addi $a1,$zero,20   # read max of 20 characters
+	syscall
+	la $t0, UserEntry	#store address of USerEntry into $t0
+.end_macro
+
+.macro mac_getCentralLetter
+	addi $s0, $s1, 0
+	lb $t8, 4($s0)	#s1 holds central letter, letter that has to be in any word inputted by user; hardcoded to be 2nd letter
+.end_macro
+
+.macro mac_initCountAndIndex
+	la $t0, UserEntry
+	li $t2, 0
+	#la $s0, word
+	li $t4, 8	# used before in validateLength function; now used to hold length of 9-letter word
+	li $t6, 0	# used to keep track of index in 9-letter word
+.end_macro
+
+################## END_MACROS ###############################
+
+    ############## MACROS ###################
+
+    ##### Primitives #####
+
+        ## print_literal("string") --- takes literal "strings"
+        .macro print_literal(%literal)
+            .data
+                string: .asciiz %literal
+            .text
+                la $a0, string
+                li $v0, 4
+                syscall
+            .end_macro
+
+        ## print_label(bufferName) --- takes literal "strings"
+        .macro print(%string)
+            .text
+                la $a0, %string
+                li $v0, 4
+                syscall
+            .end_macro
+
+        .macro print_len(%stringAddr, %n)
+            ## print by character a0, 11
+            move $a2, %stringAddr      ## probably not needed
+            li $a1, 0                  ## our accumulator
+            lb   $a0, ($a2)
+            li   $v0, 11               ## our syscall code
+
+            loop:
+                syscall                ## print character
+                addi $a1, $a1, 1       ## increment counter
+                beq  $a1, %n, exit
+                add  $a3, $a2, $a1
+                lb   $a0, ($a3)        ## increment byte address
+                j loop
+
+            exit:
+            .end_macro
+
+        ## open_file(filename) -- file descriptor placed in $v0
+        .macro open_file(%filename)
+            .text
+                la   $a0, %filename        # load file name
+                li   $a1, 0               # Open for Reading (flags are 0: read, 1: write)
+                li   $a2, 0               # mode is ignored
+                li   $v0, 13              # syscall 13 == open a file; returns file descriptor to v0
+                syscall
+            .end_macro
+
+
+        ## Loads buffer with dictionary, updates dictN -- given file descriptor, buffer, length of read
+        .macro load_buffer(%fdesc, %buffer, %n)
+            .text
+                    move   $a0, %fdesc              # prep file descriptor for read
+                    move   $a2, %n                  # number of bytes to be read --- this too
+                    li     $t8, 0
+
+            loop:   #move   $a0, %fdesc             # prep file descriptor for read --- shouldnt this be out of loop?
+                    la     $a1, %buffer($t8)        # allocate space for the bytes loaded
+                    #move   $a2, %n                 # number of bytes to be read --- this too
+                    li     $v0, 14                  # syscall 14 == read from file
+                    syscall
+
+                    blt $v0, 1, exit                ## exit if there's nothing left to read
+                    add $t8, $t8, %n
+                    j loop
+
+            exit:   la   $a0, %buffer               ## store the initial address of buffer into dictN
+                    addi $a2, $a2, -5
+                    sll  $a2, $a2, 2
+                    sw   $a0, dictN($a2)
+
+            .end_macro
+
+        ## Closes file given file descriptor
+        .macro close_file(%fdesc)
+            .text
+                li   $v0, 16              # system call for close file
+                move $a0, %fdesc             # file descriptor to close
+                syscall                   # close file
+            .end_macro
+
+    ##### Composistions #####
+
+        ## loads dictionaries into memory, adds dictionary reference to dictN
+        .macro load_dict(%filename, %buffer, %n)
+            .text
+                # open the file
+                open_file(%filename)
+
+                # preserve the file decriptor for closing later
+                move $t9, $v0
+
+                # read the file into the buffer
+                load_buffer($t9, %buffer, %n)
+
+                #print(%buffer)
+
+                # close the file
+                close_file($t9)
+            .end_macro
+
+        ## composite load_dict - no params required
+        .macro initialize()
+            .text
+                addiu $t0, $zero,  FOUR                 # preload register - arbitrary
+                load_dict(dict4_fn, dict4, $t0)         # pass n by register
+
+                addiu $t0, $zero,  FIVE                 # preload register - arbitrary
+                load_dict(dict5_fn, dict5, $t0)         # pass n by register
+
+                addiu $t0, $zero,  SIX                  # preload register - arbitrary
+                load_dict(dict6_fn, dict6, $t0)         # pass n by register
+
+                addiu $t0, $zero,  SEVEN                # preload register - arbitrary
+                load_dict(dict7_fn, dict7, $t0)         # pass n by register
+
+                addiu $t0, $zero,  EIGHT                # preload register - arbitrary
+                load_dict(dict8_fn, dict8, $t0)         # pass n by register
+
+                addiu $t0, $zero,  NINE                 # preload register - arbitrary
+                load_dict(dict9_fn, dict9, $t0)         # pass n by register
+            .end_macro
+
+        ## return 0 (==), 1(>), or -1(<) --- candidate __ current
+        .macro compare_strings(%candidate, %current, %word_length)
+            .text
+                move $a0, %candidate
+                move $a1, %current
+                move $a2, %word_length # may be li, depending on how compare is called
+                lb      $t0, ($a0)
+                lb      $t1, ($a1)
+
+                compare:
+                    bne     $t0, $t1, not_equal     ## words are not the same
+                    beq     $a2, %n, equal          ## words are the same
+
+                    addi    $a2, $a2, 1             ## increment the counter
+
+                    addi     $a0, $a0, 1            ## increment the byte address
+                    lb      $t0, ($a0)              ## load the next byte
+
+                    addi     $a1, $a0, 1
+                    lb      $t1, ($a1)
+
+                    j       compare                 ## compare next bytes
+
+
+                not_equal:                          ## determine which one is bigger
+                    slt $a3, $t0, $t1               ## is t0 smaller? yes: 1 no: 0
+
+                    beq $a3, $zero, kgt
+                    b klt
+                kgt:
+                    li $a0, 1
+                    j exit
+                klt:
+                    li $a0, -1
+                    j exit
+                equal:
+                    li $a0, 0
+                    j exit
+                exit:
+
+            .end_macro
+
+   #     .macro binary_search(%candidate, %word_length, %)
+            # hi  buff end -> hardcoded
+            # lo  buff name  -> address 0
+            # mid
+                #sum hi lo; ******************** potential for overflow? **************
+                # srl 1 (floor);
+
+   #         compare_strings()
+            ## $a0 now contains 0, 1, or -1
+
+            ## if 1, move lo to mid, make new mid
+
+            ## if -1, move hi to mid, make new mid
+
+     #       .end_macro
+
+        .macro validate_word(%candidate)
+                ## calculate number of characters
+                    # choose which buffer, "n" value to call binary search with.
+
+                ## perform binary search
+                binary_search(candidate,)
+
+                ## compare strings
+            .end_macro
+
+        .macro get_word(%buffer, %index, %n)
+            .text
+                # la $a0, %buffer
+                # word = ( [N modifier] * [word index] ) + [buffer base address]
+                #      = mx + b
+                li    $a0, %n            ## modifier for adjusting address
+                move  $a1, %index        ##
+                multu $a0, $a1
+                mflo  $a0                ## offset
+
+                la $a3, %buffer($a0)
+
+                print_len($a3, %n)
+                # or,
+                # la $v0, %buffer
+                # add $v0, $v0, $a0
+            .end_macro
+
+        .macro get_9letter()
+            .text
+                # word = modifier * index + dictionary
+                #      = mx + b
+                li    $v0, 42              ## code for random int within range
+                li    $a1, 909             ## upper bound for range
+                syscall                    ## places random number in $a0 --
+
+                li    $a2, NINE            ## length of 9letter word in bytes
+                multu $a0, $a2
+                mflo  $a3
+                la    $a1, dict9($a3)        ## the return
+
+                ## Passing the word will have to be through address.
+                ## On my mac I am able to take advantage of std_out to print to screen for testing
+                ## but this doesn't work on windows.
+                # li $a0, 1               ## filedesc std_out works!
+                # la $a1, dict9($a3)      ## the return
+                # li $a2, 9               ## no reason to include \n on print
+                # li $v0, 15              ## write to file syscall
+                # syscall
+
+                ## new solution
+                #print_len($a1, NINE)
+
+                move $s0, $a1
+
+            .end_macro
+################################### END G MACRO #############################################
+
+.text
+
+	#lb $s3, shuffle
+	#lb $s4, time
+	#lb $s5, end
+
+printRules:
+	la $a0, gameRulesOne	# Printing the rules
+	li $v0, 4
+	syscall
+
+	la $a0, commands	# Showing game commands
+	li $v0, 4
+	syscall
+
+	la $a0, startGame	# Showing command to begin
+	li $v0, 4
+	syscall
+
+	    #############   TEXT SEGMENT    #########################
+
+    initialize()
+
+   # la $a1, dict9
+   # print_len($a1, NINE)
+
+    get_9letter()
+
+
+    #addiu $t0, $zero,  NINE                 # preload register - arbitrary
+    #load_dict(dict9_fn, dict9, $t0)         # pass n by register
+
+    #addiu $t0, $zero,  100
+    #get_word( dict4, $t0, FOUR )
+
+#reed:
+#
+#	li $t1, 0		#shuffle counter
+#	li $v0, 4
+#	la $a0, output 		#prints output
+#	syscall
+#
+#	li $v0, 8		#8 is read string call number
+#	la $a0, buffer		#string is stored in $t0
+#	li $a1, 11		#string size
+#	move $s0, $a0
+#	syscall
+
+start:
+	li $v0, 12
+	syscall
+
+	li $v0, 30
+	syscall
+
+	move $s2, $a0
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	b loop
+
+middle:
+
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2 	# decrements the address of string
+	li $v0, 4
+	la $a0, space		#prints a space after char
+	syscall
+loop:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 1, loop
+	beq $s7, 4, new_line
+	beq $s7, 5, reset
+	beq $s7, 7, middle
+	beq $s7, 9, new_line
+	beq $s7, 12, reset
+	beq $s7, 14, done
+	b print
+
+
+
+print:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space		#prints a space after char
+	syscall
+	b loop
+
+reset:
+
+	addi $s0, $s0, -11	#decrements index by 9
+	b loop
+
+new_line:
+
+	li $v0, 4
+	la $a0, newline		#prints a new line after third char in line
+	syscall
+
+	addi $s0, $s0, -2	#decrements address of string before increment
+	b loop
+
+done:
+
+	add $s0, $zero, $s1	#resets s0 to s1
+	li $v0, 4
+	la $a0, newline		#prints a new line after third char in line
+	syscall
+
+	la $a0, commands	# Showing game commands
+	li $v0, 4
+	syscall
+
+	#li $v0, 12
+	#syscall			#holds what user enters
+
+	#move $s7, $v0
+
+	b validation
+
+shuffle_1:
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, -2
+	b loop1
+
+middle1:
+
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop1:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 2, loop1
+	beq $s7, 4, new_line1
+	beq $s7, 6, reset1
+	beq $s7, 7, middle1
+	beq $s7, 9, new_line1
+	beq $s7, 13, done
+	b print1
+
+print1:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+	b loop1
+
+reset1:
+	addi $s0, $s0, -11	#decrements index by 9
+	b loop1
+new_line1:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop1
+
+shuffle_2:
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, -1
+	b loop2
+
+middle2:
+
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop2:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 10, loop2
+	beq $s7, 3, new_line2
+	beq $s7, 6, reset2
+	beq $s7, 5, middle2
+	beq $s7, 8, new_line2
+	beq $s7, 13, done
+	b print2
+
+print2:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+	b loop2
+
+reset2:
+
+	addi $s0, $s0, -11	#decrements index by 9
+	b loop2
+
+new_line2:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop2
+
+shuffle_3:
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, 1
+	b loop3
+
+middle3:
+
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop3:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 9, loop3
+	beq $s7, 3, new_line3
+	beq $s7, 4, reset3
+	beq $s7, 6, middle3
+	beq $s7, 8, new_line3
+	beq $s7, 12, reset3
+	beq $s7, 14, done
+	b print3
+
+print3:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+	b loop3
+
+reset3:
+
+	addi $s0, $s0, -11	#decrements index by 11
+	b loop3
+
+new_line3:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop3
+
+shuffle_4:
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, 3
+	b loop4
+
+middle4:
+
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop4:
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 7, loop4
+	beq $s7, 4, new_line4
+	beq $s7, 2, reset4
+	beq $s7, 6, middle4
+	beq $s7, 9, new_line4
+	beq $s7, 11, reset4
+	beq $s7, 14, done
+	b print4
+
+print4:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+	b loop4
+
+reset4:
+	addi $s0, $s0, -11	#decrements index by 11
+	b loop4
+
+new_line4:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop4
+
+shuffle_5:
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, 4
+	b loop5
+
+middle5:
+
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop5:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 4, new_line5
+	beq $s7, 2, reset5
+	beq $s7, 6, middle5
+	beq $s7, 8, new_line5
+	beq $s7, 10, reset5
+	beq $s7, 13, done
+	b print5
+
+print5:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+	b loop5
+
+reset5:
+
+	addi $s0, $s0, -11	#decrements index by 11
+	b loop5
+
+new_line5:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop5
+
+shuffle_6:
+
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, 5
+	b loop6
+
+middle6:
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop6:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 5, loop6
+	beq $s7, 4, new_line6
+	beq $s7, 1, reset6
+	beq $s7, 7, middle6
+	beq $s7, 9, new_line6
+	beq $s7, 10, reset6
+	beq $s7, 14, done
+	b print6
+
+print6:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+
+	b loop6
+
+reset6:
+	addi $s0, $s0, -11	#decrements index by 11
+	b loop6
+
+new_line6:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop6
+
+shuffle_7:
+	addi $s1, $s0, 0	#creates copy of address for string points at p
+	addi $s7, $zero, -1	#iteration count
+	addi $s0, $s0, 6
+	b loop7
+
+middle7:
+	li $v0, 11
+	lb $a0, 4($s1)		#prints out specific char in middle
+	syscall
+
+	addi $s0, $s0, -2
+	li $v0, 4
+	la $a0, space
+	syscall
+
+loop7:
+
+	addi $s0, $s0, 2	# increment index by 2
+	addi $s7, $s7, 1
+	beq $s7, 11, loop7
+	beq $s7, 4, new_line7
+	beq $s7, 1, reset7
+	beq $s7, 6, middle7
+	beq $s7, 8, new_line7
+	beq $s7, 9, reset7
+	beq $s7, 14, done7
+	b print7
+
+print7:
+
+	li $v0, 11
+	lb $a0, 0($s0)		#print out character
+	syscall
+
+	li $v0, 4
+	la $a0, space
+	syscall
+
+	b loop7
+
+reset7:
+	addi $s0, $s0, -11	#decrements index by 11
+	b loop7
+
+new_line7:
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	addi $s0, $s0, -2
+	b loop7
+
+done7:
+	add $s0, $zero, $s1	#resets s0 to s1
+
+	li $v0, 4
+	la $a0, newline		#prints a new line after third char in line
+	syscall
+
+	la $a0, commands	# Showing game commands
+	li $v0, 4
+	syscall
+
+	#li $v0, 5
+	#syscall			#holds what user enters
+	#move $s7, $v0
+
+	addi $t1, $zero, -1
+	addi $s7, $zero, -1
+	#beq $s7, $s3, shuffle_counter	#if s7 is 1, shuffle
+	#beq $s7, $s4, show_time
+	#beq $s7, $s5, exit
+	b shuffle_counter
+
+shuffle_counter:
+
+	addi $t1, $t1, 1
+	beq $t1, 1, shuffle_1
+	beq $t1, 2, shuffle_2
+	beq $t1, 3, shuffle_3
+	beq $t1, 4, shuffle_4
+	beq $t1, 5, shuffle_5
+	beq $t1, 6, shuffle_6
+	beq $t1, 7, shuffle_7
+	b loop
+show_time:
+
+	li $s7, -1
+	li $v0, 30
+	syscall
+
+	li $t5, 1000
+	li $t6, -1
+	sub $a0, $a0, $s2
+	div $a0, $t5
+	mflo $a0
+	addi $a0, $a0, -60
+	mul  $a0, $a0, $t6
+	mflo $a0
+
+	li $v0, 1
+	syscall
+
+	li $v0, 4
+	la $a0, sec
+	syscall
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+	li $v0, 4
+	la $a0, newline
+	syscall
+
+
+	b shuffle_counter
+
+time_test_shuffle:
+
+	li $v0, 30
+	syscall
+
+	li $t5, 1000
+	li $t6, -1
+	sub $a0, $a0, $s2
+	div $a0, $t5
+	mflo $a0
+	addi $a0, $a0, -60
+	mul  $a0, $a0, $t6
+	mflo $a0
+
+	slt $t5, $a0, $zero
+	beq $t5, 1, sorry
+
+	b shuffle_counter
+
+time_test_time:
+
+	li $v0, 30
+	syscall
+
+	li $t5, 1000
+	li $t6, -1
+	sub $a0, $a0, $s2
+	div $a0, $t5
+	mflo $a0
+	addi $a0, $a0, -60
+	mul  $a0, $a0, $t6
+	mflo $a0
+
+	slt $t5, $a0, $zero
+	beq $t5, 1, sorry
+	addi $t1, $t1, -1
+	b show_time
+
+check_time:
+	li $v0, 30
+	syscall
+
+	li $t5, 1000
+	li $t6, -1
+	sub $a0, $a0, $s2
+	div $a0, $t5
+	mflo $a0
+	addi $a0, $a0, -60
+	mul  $a0, $a0, $t6
+	mflo $a0
+
+	slt $t5, $a0, $zero
+	beq $t5, 1, sorry
+	#addi $t1, $t1, -1
+	jr $ra
+sorry:
+	li $v0, 4
+	la $a0, sorry_statement
+	syscall
+	b print_score
+exit:
+	li $v0, 10
+	syscall
+
+print_score:
+	li $v0, 4
+	la $a0, score_prompt
+	syscall
+
+	lw $t6, history_offset
+	srl $t7, $t6, 2
+	sll $a0, $t7, 2
+
+	li $v0, 1
+	syscall
+	b exit
+
+validation:
+
+.text
+
+init:
+	#li $s5, 0
+	mac_getCentralLetter
+
+mario:
+	mac_initCountAndIndex
+	mac_PrintString("\nEnter word:  ")    #prompt user for word
+
+	move $t0, $zero
+	mac_getUserString
+	jal check_time			#check time prompt
+	mac_getLength
+
+	move $t6, $zero
+	move $t7, $zero
+	move $t8, $zero
+	move $t9, $zero
+	la $t0, UserEntry
+	jal checkSpecChar
+
+	mac_getLength
+	move $t7, $zero
+	move $s6, $zero
+
+	#jal EndOrNah
+	jal validateLength
+	#jal exit_Length
+	mac_initCountAndIndex
+	addi $t3, $t3, -1
+	jal validateCentralLetter
+	mac_initCountAndIndex
+	#mac_PrintString("Back in mario")
+	#jal exit_CentralLetter
+	li $t4, 8	# used before in validateLength function; now used to hold length of 9-letter word
+	li $t6, 0	# used to keep track of index in 9-letter word
+	#mac_PrintInt($t3)
+	addi $t3, $t3, +1
+	jal validateAllLetters
+	mac_initCountAndIndex
+	li $t6, 0
+	#li $t4, 0
+	li $s6, 0
+	mac_getLength
+	#la $s3, addrs
+
+	#jal seeIfInHistory
+
+	#addi $s5, $s5, 1
+	addi $s0, $s1, 0
+	addi $s7, $zero, -1
+	addi $t1, $t1, -1
+	lw $t6, history_offset
+	sb $t0, history($t6)
+	addi $t6, $t6, 4
+	sw $t6, history_offset
+	j shuffle_counter #needs to store in history before this
+
+checkSpecChar:
+	beq $t3, 1, checkSpecChar_cont
+	j itsAllGood
+
+checkSpecChar_cont:
+	#la $s3, shuffle
+	#la $s4, time
+	#la $s5, end
+	li $t6, LETTER_S
+	li $t7, LETTER_T
+	li $t8, LETTER_E
+	lb $t9, ($t0)
+
+	beq $t9, $t7, time_test_time	#if t0 is 1, shuffle
+	beq $t9, $t6, time_test_shuffle
+	beq $t9, $t8, print_score
+	j itsAllGood
+
+#compareToDoneString:
+	#mac_PrintString("Here. ")
+#	addi $t4, $t4, 1
+#	lb $s6, ($t7)
+#	lb $t6, ($t0)
+#	beq $t6, $s6, keepGoingBro
+#	j itsAllGood
+
+#keepGoingBro:
+#	#mac_PrintString("Here. ")
+#	addi $t7, $t7, 1
+#	addi $t0, $t0, 1
+#	beq $t4, 3, doneMario
+#	j compareToDoneString
+
+doneMario:
+	mac_PrintString("You entered ")
+	mac_PrintInt($s5)
+	mac_PrintString(" words.")
+
+seeIfInHistory:
+	li $s4, 0
+	move $s3, $zero
+	#addi $t6, $t6, 4
+	#mac_PrintString("current word index: ")
+	#mac_PrintInt($t6)
+	#mac_PrintString("\n")
+	#addi $t4, $t4, 4
+	#addi $s6, $s6, 4
+
+	#li $t7, 12
+	#lw $s3, addrs($t6)
+	#sw $s3, addrs($t6)
+
+	la $t0, UserEntry
+	#mac_PrintString("In array: ")
+	#li $v0, 4
+	#la $a0, ($s3)
+	#syscall
+
+	mac_getLength_history
+
+	#mac_PrintInt($t9)
+	#mac_PrintString("\n")
+	#mac_PrintInt($t3)
+
+	beq $t3, $t9, seeIfInHistory_cont
+
+	#j seeIfInHistory_cont
+
+	addi $s6, $s6, 4
+	addi $t6, $t6, 4
+	blt $s6, $t7, seeIfInHistory
+	#mac_PrintString("not supposed to be here")
+	#jr $ra
+	j itsAllGood
+
+	#seeIfInHistory_continueLoopingArray:
+	#j seeIfInHistory
+
+seeIfInHistory_cont:
+	#mac_PrintString("same length")
+	lb $t7, ($s3)
+	lb $t2, ($t0)
+
+	#li $v0, 11
+	#la $a0, ($t7)
+	#syscall
+	#mac_PrintString(" ")
+	#li $v0, 11
+	#la $a0, ($t2)
+	#syscall
+
+	bne $t7, $t2, seeIfInHistory_cont1
+	addi $s4, $s4, 1
+	blt $s4, $t9, incrementIndex_Hist
+	j errorAlreadyInHistory
+
+incrementIndex_Hist:
+	#mac_PrintString("")
+	addi $s3, $s3, 1
+	addi $t0, $t0, 1
+	j seeIfInHistory_cont
+
+seeIfInHistory_cont1:
+	addi $s6, $s6, 4
+	addi $t6, $t6, 4
+	blt $s6, $t7, seeIfInHistory
+	#move $t4, $zero
+	j itsAllGood
+	#j errorAlreadyInHistory
+
+itsAllGood:
+	#mac_PrintString("No worries, mate.")
+	jr $ra
+	#mac_PrintString("Piss off, mate.")
+
+validateLength:
+	li $t5, 4
+	slt $t4, $t3, $t5	#see if the length is less than 4
+	beq $t4, 1, repromptLength
+	li $t5, 9
+	sgt $t4, $t3, $t5	#see if the length is greater than 9
+	beq $t4, 1, repromptLength
+	jr $ra
+
+repromptLength:
+	mac_PrintString("Error: Word must be between 4 and 9 characters, inclusive.\n")
+	addi $s7, $zero, -1
+	addi $t1, $t1, -1
+	j shuffle_counter
+
+validateCentralLetter:	#sees if central letter is used in the word
+	mac_getCentralLetter
+	addiu $sp, $sp, -8	#allocate space for 2 words
+	sw $ra, 0($sp)	#store return address
+	sw $v0, 4($sp)	#store return from function
+	#move $s2, $ra
+	lb $t7, ($t0)   #load the character at the index into t7
+	bgt $t2, $t3, errorCentralLetter
+	jal validateCentralLetter_cont
+	#move $ra, $s2
+	lw $v0, 4($sp)
+	lw $ra, 0($sp)
+	addiu $sp, $sp, 8
+	#mac_PrintString("Here ")
+	jr $ra
+
+validateCentralLetter_cont:
+	#mac_PrintString("Current letter: ")
+	#mac_PrintLetter
+	#mac_PrintString("\n")
+	mac_getCentralLetter
+	bne $t7, $t8, validateCentralLetter_cont2
+	jr $ra
+
+validateCentralLetter_cont2:
+	addi $t2, $t2, 1  # increment index
+	addi $t0, $t0, 1  #increment address, so that the lb function accesses the next char
+	#mac_PrintString("In second central char validation.")
+	j validateCentralLetter
+
+validateAllLetters:
+	addiu $sp, $sp, -8	#allocate space for 2 words
+	sw $ra, 0($sp)	#store return address
+	sw $v0, 4($sp)
+	lb $t7, ($t0)   #user string: load the character at the index into t7
+	#mac_PrintLetter
+	lb $t5, ($s0)	# 9-letter generated word: load the character at the index into t5
+	#mac_PrintChar9LetterWord
+	bgt $t2, $t3, errorAllLetters_1
+	jal validateAllLetters_cont
+	lw $v0, 4($sp)
+	lw $ra, 0($sp)
+	addiu $sp, $sp, 8
+	blt $t2, $t3, validateAllLetters
+	jr $ra
+
+validateAllLetters_cont:
+	bne $t7, $t5, increaseIndex
+	addi $s0, $s1, 0
+	li $t6, 0
+	addi $t2, $t2, 1  # increment number of chars in string
+	##beq $t2, $t3, mario
+	addi $t0, $t0, 1  #increment address, so that the lb function accesses the next char
+	##j validateAllLetters
+	jr $ra
+
+increaseIndex:
+	#mac_PrintString("Current Letter in 9-letterWord: ")
+	#mac_PrintChar9LetterWord
+	#mac_PrintString("\n")
+	addi $s0, $s0, 1
+	addi $t6, $t6, 1
+	bgt $t6, $t4, errorAllLetters_2
+	j validateAllLetters
+
+errorAllLetters_1:
+	mac_PrintString("Error: Input may only contain characters in the 9-letter word.(User size exceeded).\n")
+	addi $s0, $s1, 0
+	addi $s7, $zero, -1
+	addi $t1, $t1, -1
+	j shuffle_counter
+
+errorAllLetters_2:
+	mac_PrintString("Error: Input may only contain characters in the 9-letter word.\n")
+	addi $s0, $s1, 0
+	addi $s7, $zero, -1
+	addi $t1, $t1, -1
+	j shuffle_counter
+
+errorCentralLetter:
+	mac_PrintString("Error: Word does not contain central character.\n")
+	addi $s0, $s1, 0
+	addi $s7, $zero, -1
+	addi $t1, $t1, -1
+	j shuffle_counter
+
+exit_CentralLetter:
+	mac_PrintString("Central letter constraint satisfied.\n")
+	jr $ra
+
+errorAlreadyInHistory:
+	mac_PrintString("Error: This word is already in your history.\n")
+	addi $s0, $s1, 0
+	addi $s7, $zero, -1
+	addi $t1, $t1, -1
+	j shuffle_counter
+
+exit_Length:
+	#mac_PrintString("Length constraint satisfied. Word length = ")
+	mac_PrintString("Length constraint satisfied.\n")
+	#mac_PrintInt($t3)
+	jr $ra
