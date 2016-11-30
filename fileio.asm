@@ -33,20 +33,20 @@
 
     ## file names 
     test:     .ascii  "test\n"
-    dict4_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/4dict.txt" 
-    dict5_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/5dict.txt" 
-    dict6_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/6dict.txt" 
-    dict7_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/7dict.txt" 
-    dict8_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/8dict.txt" 
-    dict9_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
+    # dict4_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/4dict.txt" 
+    # dict5_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/5dict.txt" 
+    # dict6_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/6dict.txt" 
+    # dict7_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/7dict.txt" 
+    # dict8_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/8dict.txt" 
+    # dict9_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
 
     ## windows file names 
-    #dict4_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\4dict.txt" 
-    #dict5_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\5dict.txt" 
-    #dict6_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\6dict.txt" 
-    #dict7_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\7dict.txt" 
-    #dict8_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\8dict.txt" 
-    #dict9_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\9dict.txt" 
+    dict4_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\4dict.txt" 
+    dict5_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\5dict.txt" 
+    dict6_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\6dict.txt" 
+    dict7_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\7dict.txt" 
+    dict8_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\8dict.txt" 
+    dict9_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\9dict.txt" 
 
     ############## MACROS ###################
 
@@ -173,27 +173,28 @@
             .end_macro
 
         ## return 0 (==), 1(>), or -1(<) --- candidate __ current 
-        .macro compare_strings(%candidate, %current, %word_length, %counter)
+        .macro compare_strings(%candidate, %current, %word_length)#, %counter)
             .text
-                add   $t8, %counter, $zero
-                add   $t2, $t8, %candidate
-                add   $t3, $t8, %current
-                
-                lb      $t5, ($t2) 
-                lb      $t6, ($t3)
+              #add   $t8, %counter, $zero
+                li    $t8, 1
+                #subu  $t7, %word_length, 1
+                #la    $t2, %candidate
+               # move  $t3, %current
+                    lb      $t5, %candidate
+                    lb      $t6, (%current)
                 
                 compare:
-                    bne      $t5, $t6, not_equal        ## words are not the same 
-                    beq      $t8, %word_length, equal   ## words are the same 
 
-                                            
-                    addi     $t2, $t2, 1                ## increment the byte address
-                    addi     $t3, $t3, 1        
+                    beq     $t5, $t5, eqv
+                    bne     $t5, $t6, not_equal        ## words are not the same 
+                   # addi     $t2, $t2, 1                ## increment the byte address
+                   # addi     $t3, $t3, 1        
+                eqv:    
                     addi     $t8, $t8, 1                ## increment the counter 
-                    
-                    lb       $t5, ($t2)                 ## load the next byte 
-                    lb       $t6, ($t3)
-
+                    beq      $t8, %word_length, equal   ## words are the same 
+                    lb      $t5, %candidate($t8) 
+                    add     $t2, %current, $t8
+                    lb      $t6, ($t2)
                     j       compare                     ## compare next bytes 
 
                 
@@ -212,14 +213,15 @@
                     j exit 
                 exit:
                     
+                    
             .end_macro
 
         .macro binary_search(%buffer, %word_count, %candidate, %word_length)
             la   $a0, 0              ## LO - 0 index
             li   $a1, %word_count    ## HI - number of total words 
             li   $a3, %word_length
-            la   $t9, %candidate
-            li   $t8, 0
+            #la   $t9, %candidate
+            #li   $t8, 1
 
             #mult $a1, $a3
             #mflo $a1 
@@ -231,11 +233,11 @@
                 beq   $a2, $a0, failure 
                 beq   $a2, $a1, failure 
                 multu $a2, $a3           ## Middle word * word_length
-                mflo  $t0                ## store it somewhere else... 
+                mflo  $t9                ## store it somewhere else... 
 
-                la $t0, %buffer($t0)     ## the address of the word at a2
+                la $t0, %buffer($t9)     ## the address of the word at a2
                 
-                compare_strings(%candidate, $t0, %word_length, $t8)
+                compare_strings(%candidate, $t0, %word_length)#, $t8)
                 
                 beqz $t0, success        ## if compare returns $zero, we've found our match -> score 
                 beq  $a2, $a0, failure   ## if lo == mid.... the word probably can't be scored. to be tested. 
@@ -255,8 +257,10 @@
             
             success:
                         li $a0, 1 ## success
+                        j exit
             failure: 
-                        li $a0, 0 ## failure  
+                        li $a0, 0 ## failure 
+                        j exit
             exit: 
 
             .end_macro
