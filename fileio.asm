@@ -33,20 +33,20 @@
 
     ## file names 
     test:     .ascii  "test\n"
-    # dict4_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/4dict.txt" 
-    # dict5_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/5dict.txt" 
-    # dict6_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/6dict.txt" 
-    # dict7_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/7dict.txt" 
-    # dict8_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/8dict.txt" 
-    # dict9_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
+     dict4_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/4dict.txt" 
+     dict5_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/5dict.txt" 
+     dict6_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/6dict.txt" 
+     dict7_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/7dict.txt" 
+     dict8_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/8dict.txt" 
+     dict9_fn: .asciiz "/Users\/tefferon\/Documents\/workspace\/MIPS-Lexathon\/Dictionaries\/9dict.txt" 
 
     ## windows file names 
-    dict4_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\4dict.txt" 
-    dict5_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\5dict.txt" 
-    dict6_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\6dict.txt" 
-    dict7_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\7dict.txt" 
-    dict8_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\8dict.txt" 
-    dict9_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\9dict.txt" 
+    #dict4_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\4dict.txt" 
+    #dict5_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\5dict.txt" 
+    #dict6_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\6dict.txt" 
+    #dict7_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\7dict.txt" 
+    #dict8_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\8dict.txt" 
+    #dict9_fn: .asciiz "C:\\Users\\gsp15\\Documents\\GitHub\\MIPS-Lexathon\\Dictionaries\\9dict.txt" 
 
     ############## MACROS ###################
 
@@ -176,7 +176,8 @@
         .macro compare_strings(%candidate, %current, %word_length)#, %counter)
             .text
               #add   $t8, %counter, $zero
-                li    $t8, 1
+                subu  $t0, %current, %word_length
+                li    $t8, 0
                 #subu  $t7, %word_length, 1
                 #la    $t2, %candidate
                # move  $t3, %current
@@ -185,7 +186,7 @@
                 
                 compare:
 
-                    beq     $t5, $t5, eqv
+                    beq     $t5, $t6, eqv
                     bne     $t5, $t6, not_equal        ## words are not the same 
                    # addi     $t2, $t2, 1                ## increment the byte address
                    # addi     $t3, $t3, 1        
@@ -193,7 +194,7 @@
                     addi     $t8, $t8, 1                ## increment the counter 
                     beq      $t8, %word_length, equal   ## words are the same 
                     lb      $t5, %candidate($t8) 
-                    add     $t2, %current, $t8
+                    addu     $t2, %current, $t8
                     lb      $t6, ($t2)
                     j       compare                     ## compare next bytes 
 
